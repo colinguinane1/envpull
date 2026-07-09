@@ -1,12 +1,20 @@
 import { Hono } from "hono";
+import type { Context, Next } from "hono";
 import { prisma } from "../lib/prisma";
 import bcrypt from "bcrypt";
 import { createToken } from "../lib/jwt";
 import { jwtVerify } from "jose";
+import { generateRecoveryKey } from "../lib/recoveryKey";
 
-const auth = new Hono();
+type AuthEnv = {
+  Variables: {
+    userId: string;
+  };
+};
 
-export const authMiddleware = async (c, next) => {
+const auth = new Hono<AuthEnv>();
+
+export const authMiddleware = async (c: Context<AuthEnv>, next: Next) => {
   const authHeader = c.req.header("Authorization");
 
   if (!authHeader) {
@@ -39,7 +47,7 @@ auth.get("/me", async (c) => {
   const userId = c.get("userId");
 
   const user = await prisma.user.findUnique({
-    where: { id: userId as string },
+    where: { id: userId },
     select: { id: true, email: true, createdAt: true },
   });
 
@@ -60,14 +68,26 @@ auth.post("/login", async (c) => {
   if (!existingUser) {
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({ data: { email, passwordHash } });
+    const recoveryKey = generateRecoveryKey();
+    if (!recoveryKey) {
+      return c.json({ error: "Error creating recovery keys" }, 401);
+    }
+
+    const recoveryKeyHash = await bcrypt.hash(recoveryKey, 10);
+
+    const user = await prisma.user.create({
+      data: { email, passwordHash, recoveryKeyHash },
+    });
 
     const token = await createToken(user.id);
 
-    return c.json({ token });
+    return c.json({ token, recoveryKey });
   }
 
-  const validPassword = bcrypt.compare(password, existingUser?.passwordHash);
+  const validPassword = await bcrypt.compare(
+    password,
+    existingUser?.passwordHash,
+  );
 
   if (!validPassword) {
     return c.json({ error: "User exists but has invalid credentials" }, 401);
