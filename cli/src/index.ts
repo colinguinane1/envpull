@@ -5,6 +5,7 @@ import { pushCommand } from "./commands/push.js";
 import { statusCommand } from "./commands/status.js";
 import { loginCommand } from "./commands/login.js";
 import { whoAmICommand } from "./commands/whoami.js";
+import { logoutCommand } from "./commands/logout.js";
 
 const program = new Command();
 
@@ -26,5 +27,10 @@ program
   .command("whoami")
   .description("Details of logged in user")
   .action(whoAmICommand);
+
+program
+  .command("logout")
+  .description("Logout the current user")
+  .action(logoutCommand);
 
 program.parse();

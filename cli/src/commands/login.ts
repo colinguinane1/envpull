@@ -1,8 +1,14 @@
 import { input, password } from "@inquirer/prompts";
 import axios from "axios";
-import { saveToken } from "../utils/config.js";
+import { getToken, saveToken } from "../utils/config.js";
 
 export async function loginCommand() {
+  const token = getToken();
+
+  if (token) {
+    console.log("Already logged in. Use envpull whoami for more info.");
+    process.exit(0);
+  }
   const email = await input({
     message: "Email:",
   });

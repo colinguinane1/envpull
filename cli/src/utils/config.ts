@@ -27,3 +27,9 @@ export function getToken() {
 
   return config.token;
 }
+
+export function removeToken() {
+  if (fs.existsSync(configPath)) {
+    fs.unlinkSync(configPath);
+  }
+}
