@@ -1,29 +1,29 @@
-import fs from "node:fs";
-import path from "node:path";
-import os from "node:os";
+import fs from "fs";
+import path from "path";
+import os from "os";
 
 const envpullDir = path.join(os.homedir(), ".envpull");
-
 const configPath = path.join(envpullDir, "config.json");
 
-export function saveConfig(data: object) {
+export function saveToken(token: string) {
   if (!fs.existsSync(envpullDir)) {
     fs.mkdirSync(envpullDir);
   }
 
-  fs.writeFileSync(configPath, JSON.stringify(data, null, 2));
+  fs.writeFileSync(
+    configPath,
+    JSON.stringify({
+      token,
+    }),
+  );
 }
 
-export function getConfig() {
+export function getToken() {
   if (!fs.existsSync(configPath)) {
     return null;
   }
 
-  return JSON.parse(fs.readFileSync(configPath, "utf8"));
-}
+  const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 
-export function deleteConfig() {
-  if (fs.existsSync(configPath)) {
-    fs.unlinkSync(configPath);
-  }
+  return config.token;
 }

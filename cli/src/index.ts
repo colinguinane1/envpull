@@ -4,6 +4,7 @@ import { Command } from "commander";
 import { pushCommand } from "./commands/push.js";
 import { statusCommand } from "./commands/status.js";
 import { loginCommand } from "./commands/login.js";
+import { whoAmICommand } from "./commands/whoami.js";
 
 const program = new Command();
 
@@ -20,5 +21,10 @@ program
   .action(statusCommand);
 
 program.command("login").description("Login to envpull").action(loginCommand);
+
+program
+  .command("whoami")
+  .description("Details of logged in user")
+  .action(whoAmICommand);
 
 program.parse();
