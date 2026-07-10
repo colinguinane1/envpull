@@ -18,4 +18,9 @@ export function getToken() {
     const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
     return config.token;
 }
+export function removeToken() {
+    if (fs.existsSync(configPath)) {
+        fs.unlinkSync(configPath);
+    }
+}
 //# sourceMappingURL=config.js.map

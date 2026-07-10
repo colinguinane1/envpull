@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./cli" },
+    { "path": "./back" },
+    { "path": "./front" }
+  ]
+}

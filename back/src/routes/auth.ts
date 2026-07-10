@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import { createToken } from "../lib/jwt";
 import { jwtVerify } from "jose";
 import { generateRecoveryKey } from "../lib/recoveryKey";
+import axios from "axios";
 
 type AuthEnv = {
   Variables: {
@@ -34,6 +35,51 @@ export const authMiddleware = async (c: Context<AuthEnv>, next: Next) => {
     return c.json({ error: "Invalid token" }, 401);
   }
 };
+
+auth.get("/github/callback", async (c) => {
+  const code = c.req.query("code");
+
+  if (!code) {
+    return c.json({error: "Missing github code"}, 400)
+  }
+
+  const tokenResponse = await axios.post("https://github.com/login/oauth/access_token", {
+    client_id: process.env.GITHUB_CLIENT_ID,
+    client_secret: process.env.GITHUB_CLIENT_SECRET,
+    code,
+  }, {
+    headers: {
+      Accept: "application/json"
+    }
+  })
+  const accessToken = tokenResponse.data.access_token;
+
+  if (!accessToken) {
+    return c.json({error: "No access token from github"}, 403)
+  }
+
+  const githubResponse = await axios.get(
+     "https://api.github.com/user",
+     {
+       headers: {
+         Authorization: `Bearer ${accessToken}`,
+         Accept: "application/json",
+       },
+     }
+   );
+ 
+   const githubUser = githubResponse.data;
+})
+
+
+auth.get("/github", (c) => {
+  const url =
+    "https://github.com/login/oauth/authorize" +
+    `?client_id=${process.env.GITHUB_CLIENT_ID}` +
+    "&scope=repo%20read:user%20user:email";
+
+  return c.redirect(url);
+})
 
 auth.get("/test", (c) => {
   return c.json({
