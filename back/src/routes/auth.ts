@@ -36,11 +36,50 @@ export const authMiddleware = async (c: Context<AuthEnv>, next: Next) => {
   }
 };
 
+auth.use("/github/start", authMiddleware)
+
+auth.get("/github/start", async (c) => {
+  const userId = c.get("userId");
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    return c.json({ error: "User not found" }, 404);
+  }
+
+  const state = Buffer.from(
+    JSON.stringify({
+      userId: user.id,
+    })
+  ).toString("base64url");
+
+  const url =
+    "https://github.com/login/oauth/authorize" +
+    `?client_id=${process.env.GITHUB_CLIENT_ID}` +
+    "&scope=repo%20read:user%20user:email" +
+    `&state=${state}`;
+
+  return c.json({ url });
+});
+
 auth.get("/github/callback", async (c) => {
   const code = c.req.query("code");
+   const state = c.req.query("state");
 
   if (!code) {
     return c.json({error: "Missing github code"}, 400)
+  }
+
+  const { userId } = JSON.parse(
+     Buffer.from(state!, "base64url").toString()
+   );
+
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+
+  if (!user) {
+    return c.json({error: "User not found"}, 404)
   }
 
   const tokenResponse = await axios.post("https://github.com/login/oauth/access_token", {
@@ -67,8 +106,13 @@ auth.get("/github/callback", async (c) => {
        },
      }
    );
- 
-   const githubUser = githubResponse.data;
+
+  const githubUser = githubResponse.data;
+
+  await prisma.user.update({ where: { id: userId }, data: { githubId: githubUser.id, githubAccessToken: accessToken } })
+
+  console.log("recieved this github data: ", githubResponse)
+  return c.json({ message: "github data received", githubUser })
 })
 
 

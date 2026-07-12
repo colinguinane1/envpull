@@ -10,11 +10,8 @@ export async function gitLogin() {
     return
   }
 
-  const response = await axios.post(
-     "http://localhost:3000/auth/github/start",
-     {
-       token,
-     }
-   );
+  const response = await axios.get("http://localhost:3000/auth/github/start", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
    await open(response.data.url);
 }

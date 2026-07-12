@@ -17,5 +17,7 @@ model User {
   email String @unique
   passwordHash String
   createdAt DateTime @default(now())
-  recoveryKeyHash String 
+  recoveryKeyHash String
+  githubId Int?
+  githubAccessToken String?
 }
