@@ -12,7 +12,7 @@ const program = new Command();
 program
     .name("envpull")
     .description("Env variable manaager")
-    .version("(dev v0.1)");
+    .version("0.1.1");
 program
     .command("push")
     .description("Upload enviornment variables")

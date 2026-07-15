@@ -1,20 +1,47 @@
 {
-  "name": "envpull",
-  "version": "1.0.0",
+  "name": "@colinguinane/envpull-cli",
+  "version": "0.1.1",
   "type": "module",
-  "description": "",
-  "main": "index.js",
+  "description": "Secure, zero-knowledge .env sync for developers",
+  "main": "./dist/index.js",
+  "bin": {
+    "envpull": "dist/index.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "native"
+  ],
   "scripts": {
     "test": "node --import tsx --test src/crypto/vault.test.ts",
     "dev": "tsx src/index.ts",
     "envpull": "tsx src/index.ts",
-    "build": "tsc"
+    "build": "rm -rf dist && tsc && rm -f dist/crypto/vault.test.*",
+    "prepack": "pnpm build",
+    "prepublishOnly": "pnpm test && pnpm build"
   },
-  "keywords": [],
-  "bin": {
-    "envpull": "./bin/envpull.js"
+  "keywords": [
+    "env",
+    "dotenv",
+    "secrets",
+    "cli",
+    "zero-knowledge"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/colinguinane1/envpull.git",
+    "directory": "cli"
   },
-  "author": "",
+  "homepage": "https://envpull.dev",
+  "bugs": {
+    "url": "https://github.com/colinguinane1/envpull/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "author": "Colin Guinane",
   "license": "ISC",
   "packageManager": "pnpm@10.18.1",
   "dependencies": {

@@ -1,15 +1,12 @@
 import axios from "axios";
 import { password } from "@inquirer/prompts";
-import { getToken } from "./config.js";
 import { getApiBase, authHeaders } from "./api.js";
 import { getMasterKey, setMasterKey, clearMasterKey, } from "./session.js";
 import { unlockWithPassword, } from "../crypto/vault.js";
 import { errorMessage, fail } from "./fail.js";
+import { requireAuth } from "./auth.js";
 export async function fetchVaultWrap() {
-    const token = getToken();
-    if (!token) {
-        fail("Not logged in. Run envpull login first.");
-    }
+    const token = await requireAuth();
     try {
         const response = await axios.get(`${getApiBase()}/vault`, {
             headers: authHeaders(token),
@@ -21,6 +18,7 @@ export async function fetchVaultWrap() {
     }
 }
 export async function requireUnlockedMasterKey(promptMessage = "Password:") {
+    await requireAuth();
     try {
         const cached = await getMasterKey();
         if (cached) {

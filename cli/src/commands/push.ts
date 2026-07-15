@@ -1,10 +1,10 @@
-import { getToken } from "../utils/config.js";
 import { getApiBase, authHeaders } from "../utils/api.js";
 import axios from "axios";
 import { getProjectConfig } from "../utils/project.js";
 import { requireUnlockedMasterKey } from "../utils/unlock.js";
 import { encryptEnv } from "../crypto/vault.js";
 import { errorMessage, fail } from "../utils/fail.js";
+import { requireAuth } from "../utils/auth.js";
 import fs from "fs";
 import path from "path";
 
@@ -12,14 +12,11 @@ const ENV_FILE = ".env";
 
 export async function pushCommand() {
   try {
-    const token = getToken();
-    if (!token) {
-      fail("Not logged in. Run envpull login first.");
-    }
+    const token = await requireAuth();
 
     const project = getProjectConfig();
     if (!project) {
-      fail("No project linked. Run envpull init in this directory first.");
+      fail("No project linked.\n\nRun: envpull init");
     }
 
     const envPath = path.join(process.cwd(), ENV_FILE);

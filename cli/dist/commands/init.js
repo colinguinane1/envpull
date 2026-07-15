@@ -1,16 +1,13 @@
 import axios from "axios";
 import path from "path";
 import { input } from "@inquirer/prompts";
-import { getToken } from "../utils/config.js";
 import { getApiBase, authHeaders } from "../utils/api.js";
 import { getProjectConfig, saveProjectConfig, slugify, } from "../utils/project.js";
 import { fail, errorMessage } from "../utils/fail.js";
+import { requireAuth } from "../utils/auth.js";
 export async function initCommand() {
     try {
-        const token = getToken();
-        if (!token) {
-            fail("Not logged in. Run envpull login first.");
-        }
+        const token = await requireAuth();
         const existing = getProjectConfig();
         if (existing) {
             console.log(`Project already initialized: ${existing.name} (${existing.slug})`);
