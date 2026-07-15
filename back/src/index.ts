@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
-import auth from "./routes/auth";
-import vault from "./routes/vault";
-import projects from "./routes/projects";
+import auth from "./routes/auth.js";
+import vault from "./routes/vault.js";
+import projects from "./routes/projects.js";
 import { logger } from "hono/logger";
 
 const app = new Hono();

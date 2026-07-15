@@ -1,10 +1,13 @@
 import { Hono } from "hono";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma.js";
 import bcrypt from "bcrypt";
-import { createToken } from "../lib/jwt";
-import { authMiddleware, type AuthEnv } from "../lib/authMiddleware";
-import { clientKey, rateLimit } from "../lib/rateLimit";
-import { recoverMiddleware } from "../lib/authMiddleware";
+import { createToken } from "../lib/jwt.js";
+import {
+  authMiddleware,
+  recoverMiddleware,
+  type AuthEnv,
+} from "../lib/authMiddleware.js";
+import { clientKey, rateLimit } from "../lib/rateLimit.js";
 
 const auth = new Hono<AuthEnv>();
 

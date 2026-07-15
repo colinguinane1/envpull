@@ -1,13 +1,14 @@
 {
   "name": "back",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/index.ts",
-    "build": "prisma generate",
-    "start": "prisma migrate deploy && tsx src/index.ts",
+    "build": "prisma generate && tsc",
+    "start": "prisma migrate deploy && node dist/index.js",
     "db:generate": "prisma generate"
   },
   "keywords": [],
@@ -24,12 +25,12 @@
     "jose": "^6.2.3",
     "pg": "^8.22.0",
     "prisma": "^7.8.0",
-    "tsx": "^4.23.0"
+    "tsx": "^4.23.0",
+    "typescript": "^7.0.2"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^26.1.1",
-    "@types/pg": "^8.20.0",
-    "typescript": "^7.0.2"
+    "@types/pg": "^8.20.0"
   }
 }
