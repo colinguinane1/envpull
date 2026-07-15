@@ -1,2 +1,2 @@
-export declare function logoutCommand(): void;
+export declare function logoutCommand(): Promise<void>;
 //# sourceMappingURL=logout.d.ts.map

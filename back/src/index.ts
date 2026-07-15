@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import auth from "./routes/auth";
+import vault from "./routes/vault";
+import projects from "./routes/projects";
 import { logger } from "hono/logger";
 
 const app = new Hono();
@@ -18,10 +20,16 @@ app.get("/health", (c) => {
 });
 
 app.route("/auth", auth);
+app.route("/vault", vault);
+app.route("/projects", projects);
+
+const port = Number(process.env.PORT ?? 3000);
+const hostname = process.env.HOST ?? "0.0.0.0";
 
 serve({
   fetch: app.fetch,
-  port: 3000,
+  port,
+  hostname,
 });
 
-console.log("API running on http://localhost:3000");
+console.log(`API running on http://${hostname}:${port}`);

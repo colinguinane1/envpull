@@ -2,6 +2,7 @@ import { input, password } from "@inquirer/prompts";
 import axios from "axios";
 import { getToken, saveToken } from "../utils/config.js";
 import chalk from "chalk";
+import open from "open";
 
 export async function loginCommand() {
   const token = getToken();
@@ -10,6 +11,13 @@ export async function loginCommand() {
     console.log("Already logged in. Use envpull whoami for more info.");
     process.exit(0);
   }
+
+  const gitResponse = await axios.get("http://localhost:3000/auth/github/start", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  await open(gitResponse.data.url);
+
+
   const email = await input({
     message: "Email:",
   });
@@ -40,5 +48,7 @@ export async function loginCommand() {
 
     console.log(chalk.bold.green(response.data.recoveryKey));
   }
+
+  console.log("Now add your GitHub account.")
   console.log("✔ Logged in successfully");
 }

@@ -2,11 +2,13 @@
 
 import { Command } from "commander";
 import { pushCommand } from "./commands/push.js";
-import { statusCommand } from "./commands/status.js";
+import { pullCommand } from "./commands/pull.js";
+import { initCommand } from "./commands/init.js";
 import { loginCommand } from "./commands/login.js";
 import { whoAmICommand } from "./commands/whoami.js";
 import { logoutCommand } from "./commands/logout.js";
-import { gitLogin } from "./commands/gitlogin.js";
+import { recoverCommand } from "./commands/recover.js";
+import { configCommand } from "./commands/config.js";
 
 const program = new Command();
 
@@ -21,9 +23,28 @@ program
   .action(pushCommand);
 
 program
-  .command("status")
-  .description("See status of logged in user")
-  .action(statusCommand);
+  .command("pull")
+  .description("Download environment variables")
+  .action(pullCommand);
+
+program
+  .command("init")
+  .description("Create or connect a project in this directory")
+  .action(initCommand);
+
+program
+  .command("recover")
+  .description("Reset password with recovery key (no login required)")
+  .action(recoverCommand);
+
+program
+  .command("config")
+  .description("Show or set CLI config")
+  .argument("[action]", "show | set-api | set-biometrics")
+  .argument("[value]", "value for set-api / set-biometrics")
+  .action((action?: string, value?: string) => {
+    void configCommand(action, value);
+  });
 
 program.command("login").description("Login to envpull").action(loginCommand);
 
@@ -36,7 +57,5 @@ program
   .command("logout")
   .description("Logout the current user")
   .action(logoutCommand);
-
-program.command("gitlogin").description("Login to GitHub").action(gitLogin);
 
 program.parse();

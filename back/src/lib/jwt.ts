@@ -1,15 +1,32 @@
-import { SignJWT } from "jose";
+import { SignJWT, jwtVerify } from "jose";
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+export type TokenPurpose = "session" | "recover";
 
-export async function createToken(userId: string) {
+function getSecret() {
+  return new TextEncoder().encode(process.env.JWT_SECRET);
+}
+
+export async function createToken(
+  userId: string,
+  purpose: TokenPurpose = "session",
+  expiresIn = purpose === "recover" ? "10m" : "7d",
+) {
   return await new SignJWT({
     userId,
+    purpose,
   })
     .setProtectedHeader({
       alg: "HS256",
     })
     .setIssuedAt()
-    .setExpirationTime("7d")
-    .sign(secret);
+    .setExpirationTime(expiresIn)
+    .sign(getSecret());
+}
+
+export async function verifyToken(token: string) {
+  const { payload } = await jwtVerify(token, getSecret());
+  return {
+    userId: payload.userId as string,
+    purpose: (payload.purpose as TokenPurpose | undefined) ?? "session",
+  };
 }
