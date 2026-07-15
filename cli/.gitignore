@@ -1,2 +1,7 @@
 node_modules
 *.tgz
+.env
+.env.*
+!.env.example
+unlocked.key
+*.pem

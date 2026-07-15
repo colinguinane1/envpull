@@ -1,8 +1,7 @@
 import { getStoredApiUrl, isBiometricsEnabled, readConfig, setApiUrl, setBiometricsEnabled, } from "../utils/config.js";
-import { getApiBase } from "../utils/api.js";
-import { fail } from "../utils/fail.js";
+import { getApiBase, normalizeApiBase } from "../utils/api.js";
+import { fail, errorMessage } from "../utils/fail.js";
 import { restashMasterKey } from "../utils/session.js";
-import { errorMessage } from "../utils/fail.js";
 export async function configCommand(action, value) {
     if (!action || action === "show") {
         const config = readConfig();
@@ -11,7 +10,14 @@ export async function configCommand(action, value) {
             : getStoredApiUrl()
                 ? "config"
                 : "default";
-        console.log(`apiUrl: ${getApiBase()} (${source})`);
+        let apiUrl;
+        try {
+            apiUrl = getApiBase();
+        }
+        catch (error) {
+            fail(errorMessage(error, "Invalid API URL configured"));
+        }
+        console.log(`apiUrl: ${apiUrl} (${source})`);
         if (source === "default") {
             console.log(`(override with ENVPULL_API_URL or envpull config set-api)`);
         }
@@ -23,14 +29,15 @@ export async function configCommand(action, value) {
         if (!value) {
             fail("Usage: envpull config set-api <url>");
         }
+        let normalized;
         try {
-            new URL(value);
+            normalized = normalizeApiBase(value);
         }
-        catch {
-            fail("Invalid URL");
+        catch (error) {
+            fail(errorMessage(error, "Invalid API URL"));
         }
-        setApiUrl(value);
-        console.log(`✔ API URL set to ${value.replace(/\/$/, "")}`);
+        setApiUrl(normalized);
+        console.log(`✔ API URL set to ${normalized}`);
         return;
     }
     if (action === "set-biometrics") {

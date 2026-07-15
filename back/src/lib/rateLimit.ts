@@ -29,6 +29,15 @@ export function rateLimit(
   return { ok: true };
 }
 
+/** Use the leftmost X-Forwarded-For hop (client as seen by the first proxy). */
+export function clientIp(xff: string | undefined): string {
+  if (!xff) {
+    return "unknown";
+  }
+  const first = xff.split(",")[0]?.trim();
+  return first && first.length > 0 ? first : "unknown";
+}
+
 export function clientKey(ip: string | undefined, email: string) {
   return `${ip ?? "unknown"}:${email.trim().toLowerCase()}`;
 }

@@ -24,7 +24,7 @@ pnpm dev
 | Variable | Required | Description |
 |---|---|---|
 | `DATABASE_URL` | yes | Postgres connection string |
-| `JWT_SECRET` | yes | HS256 signing secret |
+| `JWT_SECRET` | yes | HS256 signing secret (min 32 characters) |
 | `PORT` | no | Default `3000` |
 | `HOST` | no | Default `0.0.0.0` |
 

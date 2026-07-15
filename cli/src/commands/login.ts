@@ -1,63 +1,42 @@
-import { input, password } from "@inquirer/prompts";
+import { confirm, input, password } from "@inquirer/prompts";
 import axios from "axios";
-import { getToken, saveToken } from "../utils/config.js";
+import { getToken, removeToken, saveToken } from "../utils/config.js";
 import chalk from "chalk";
-import { getApiBase } from "../utils/api.js";
+import { getApiBase, authHeaders } from "../utils/api.js";
 import { createVault, unlockWithPassword } from "../crypto/vault.js";
-import { setMasterKey } from "../utils/session.js";
+import { clearMasterKey, setMasterKey } from "../utils/session.js";
 import { fetchVaultWrap } from "../utils/unlock.js";
 import { errorMessage, fail } from "../utils/fail.js";
 
-function isAxiosError(error: unknown): error is {
-  response?: { status?: number; data?: { error?: string } };
-} {
-  return typeof error === "object" && error !== null && "response" in error;
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
 }
 
-export async function loginCommand() {
-  const token = getToken();
+function isAxiosStatus(error: unknown, status: number): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error &&
+    (error as { response?: { status?: number } }).response?.status === status
+  );
+}
 
-  if (token) {
-    console.log("Already logged in. Use envpull whoami for more info.");
-    process.exit(0);
+async function promptPasswordConfirmed(
+  message = "Password:",
+): Promise<string> {
+  const pwd = await password({ message });
+  const again = await password({ message: "Confirm password:" });
+  if (pwd !== again) {
+    fail("Passwords do not match");
   }
+  return pwd;
+}
 
-  const email = await input({
-    message: "Email:",
-  });
-
-  const pwd = await password({
-    message: "Password:",
-  });
-
-  try {
-    const response = await axios.post(`${getApiBase()}/auth/login`, {
-      email,
-      password: pwd,
-    });
-
-    saveToken(response.data.token);
-
-    const wrap = await fetchVaultWrap();
-    const masterKey = await unlockWithPassword(wrap, pwd);
-    await setMasterKey(masterKey);
-
-    console.log("✔ Logged in successfully (vault unlocked until logout)");
-    return;
-  } catch (error) {
-    if (
-      !isAxiosError(error) ||
-      error.response?.status !== 400 ||
-      error.response?.data?.error !== "Vault payload required for signup"
-    ) {
-      fail(errorMessage(error, "Login failed"));
-    }
-  }
-
+async function signupFlow(email: string, pwd: string) {
   const { masterKey, vault } = await createVault(pwd);
 
   try {
-    const response = await axios.post(`${getApiBase()}/auth/login`, {
+    const response = await axios.post(`${getApiBase()}/auth/signup`, {
       email,
       password: pwd,
       recoveryKey: vault.recoveryKey,
@@ -84,8 +63,85 @@ export async function loginCommand() {
     );
 
     console.log(chalk.bold.green(vault.recoveryKey));
+
+    const saved = await confirm({
+      message: "I have saved this recovery key somewhere safe",
+      default: false,
+    });
+
+    if (!saved) {
+      console.log(
+        chalk.yellow(
+          "Write it down now — you will not see it again. Continuing anyway.",
+        ),
+      );
+    }
+
     console.log("✔ Logged in successfully (vault unlocked until logout)");
   } catch (error) {
     fail(errorMessage(error, "Signup failed"));
   }
+}
+
+export async function loginCommand() {
+  const existing = getToken();
+  if (existing) {
+    try {
+      await axios.get(`${getApiBase()}/auth/me`, {
+        headers: authHeaders(existing),
+        validateStatus: (status) => status >= 200 && status < 300,
+      });
+      console.log("Already logged in. Use envpull whoami for more info.");
+      process.exit(0);
+    } catch {
+      removeToken();
+      await clearMasterKey();
+    }
+  }
+
+  const email = normalizeEmail(
+    await input({
+      message: "Email:",
+    }),
+  );
+
+  if (!email) {
+    fail("Email is required");
+  }
+
+  const pwd = await password({
+    message: "Password:",
+  });
+
+  try {
+    const response = await axios.post(`${getApiBase()}/auth/login`, {
+      email,
+      password: pwd,
+    });
+
+    saveToken(response.data.token);
+
+    const wrap = await fetchVaultWrap();
+    const masterKey = await unlockWithPassword(wrap, pwd);
+    await setMasterKey(masterKey);
+
+    console.log("✔ Logged in successfully (vault unlocked until logout)");
+    return;
+  } catch (error) {
+    if (!isAxiosStatus(error, 401)) {
+      fail(errorMessage(error, "Login failed"));
+    }
+  }
+
+  const create = await confirm({
+    message: "No account for this email (or wrong password). Create a new account?",
+    default: false,
+  });
+
+  if (!create) {
+    fail("Login cancelled");
+  }
+
+  const confirmedPwd = await promptPasswordConfirmed("Choose a password:");
+  await signupFlow(email, confirmedPwd);
 }

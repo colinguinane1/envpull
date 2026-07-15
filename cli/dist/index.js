@@ -11,11 +11,11 @@ import { configCommand } from "./commands/config.js";
 const program = new Command();
 program
     .name("envpull")
-    .description("Env variable manaager")
-    .version("0.1.1");
+    .description("Env variable manager")
+    .version("0.1.2");
 program
     .command("push")
-    .description("Upload enviornment variables")
+    .description("Upload environment variables")
     .action(pushCommand);
 program
     .command("pull")

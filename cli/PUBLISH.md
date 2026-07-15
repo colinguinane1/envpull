@@ -13,14 +13,14 @@ npm publish --access public --otp=123456
 You must see:
 
 ```
-+ @colinguinane/envpull-cli@0.1.0
++ @colinguinane/envpull-cli@0.1.2
 ```
 
 **Verify before installing:**
 
 ```bash
 npm view @colinguinane/envpull-cli version
-# must print: 0.1.0
+# must print: 0.1.2
 # if 404, publish did not succeed
 ```
 

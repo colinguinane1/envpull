@@ -5,6 +5,23 @@ import vault from "./routes/vault.js";
 import projects from "./routes/projects.js";
 import { logger } from "hono/logger";
 
+function requireEnv() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    console.error(
+      "Fatal: JWT_SECRET must be set and at least 32 characters long",
+    );
+    process.exit(1);
+  }
+
+  if (!process.env.DATABASE_URL) {
+    console.error("Fatal: DATABASE_URL must be set");
+    process.exit(1);
+  }
+}
+
+requireEnv();
+
 const app = new Hono();
 
 app.use("*", logger());

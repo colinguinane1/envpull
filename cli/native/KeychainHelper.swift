@@ -2,7 +2,8 @@ import Foundation
 import LocalAuthentication
 import Security
 
-let service = "envpull-master-key-bio"
+let bioService = "envpull-master-key-bio"
+let plainService = "envpull-master-key"
 let account = "envpull"
 
 enum KeychainError: Error {
@@ -17,9 +18,20 @@ func printErr(_ message: String) {
   FileHandle.standardError.write(Data((message + "\n").utf8))
 }
 
+func readStdinSecret() throws -> String {
+  let data = FileHandle.standardInput.readDataToEndOfFile()
+  guard
+    let secret = String(data: data, encoding: .utf8)?
+      .trimmingCharacters(in: .whitespacesAndNewlines),
+    !secret.isEmpty
+  else {
+    throw KeychainError.missingValue
+  }
+  return secret
+}
+
 func makeAccessControl() throws -> SecAccessControl {
   var error: Unmanaged<CFError>?
-  // Touch ID / Face ID when available, otherwise device passcode
   guard let access = SecAccessControlCreateWithFlags(
     nil,
     kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
@@ -31,13 +43,13 @@ func makeAccessControl() throws -> SecAccessControl {
   return access
 }
 
-func setValue(_ secret: String) throws {
-  try deleteValue()
+func setBioValue(_ secret: String) throws {
+  try deleteValue(service: bioService)
 
   let access = try makeAccessControl()
   let query: [String: Any] = [
     kSecClass as String: kSecClassGenericPassword,
-    kSecAttrService as String: service,
+    kSecAttrService as String: bioService,
     kSecAttrAccount as String: account,
     kSecValueData as String: Data(secret.utf8),
     kSecAttrAccessControl as String: access,
@@ -49,7 +61,7 @@ func setValue(_ secret: String) throws {
   }
 }
 
-func getValue() throws -> String {
+func getBioValue() throws -> String {
   let context = LAContext()
   context.localizedReason = "Unlock envpull vault"
 
@@ -60,7 +72,7 @@ func getValue() throws -> String {
 
   let query: [String: Any] = [
     kSecClass as String: kSecClassGenericPassword,
-    kSecAttrService as String: service,
+    kSecAttrService as String: bioService,
     kSecAttrAccount as String: account,
     kSecReturnData as String: true,
     kSecMatchLimit as String: kSecMatchLimitOne,
@@ -78,7 +90,44 @@ func getValue() throws -> String {
   return secret
 }
 
-func deleteValue() throws {
+func setPlainValue(_ secret: String) throws {
+  try deleteValue(service: plainService)
+
+  let query: [String: Any] = [
+    kSecClass as String: kSecClassGenericPassword,
+    kSecAttrService as String: plainService,
+    kSecAttrAccount as String: account,
+    kSecValueData as String: Data(secret.utf8),
+    kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+  ]
+
+  let status = SecItemAdd(query as CFDictionary, nil)
+  guard status == errSecSuccess else {
+    throw KeychainError.operationFailed(status)
+  }
+}
+
+func getPlainValue() throws -> String {
+  let query: [String: Any] = [
+    kSecClass as String: kSecClassGenericPassword,
+    kSecAttrService as String: plainService,
+    kSecAttrAccount as String: account,
+    kSecReturnData as String: true,
+    kSecMatchLimit as String: kSecMatchLimitOne,
+  ]
+
+  var item: CFTypeRef?
+  let status = SecItemCopyMatching(query as CFDictionary, &item)
+  guard status == errSecSuccess else {
+    throw KeychainError.operationFailed(status)
+  }
+  guard let data = item as? Data, let secret = String(data: data, encoding: .utf8) else {
+    throw KeychainError.missingValue
+  }
+  return secret
+}
+
+func deleteValue(service: String) throws {
   let query: [String: Any] = [
     kSecClass as String: kSecClassGenericPassword,
     kSecAttrService as String: service,
@@ -91,7 +140,8 @@ func deleteValue() throws {
 }
 
 func usage() {
-  printErr("Usage: envpull-keychain <set|get|delete> [value]")
+  printErr("Usage: envpull-keychain <set-bio|get-bio|delete-bio|set-plain|get-plain|delete-plain>")
+  printErr("  set-bio / set-plain read the secret from stdin")
 }
 
 let args = CommandLine.arguments
@@ -102,17 +152,23 @@ guard args.count >= 2 else {
 
 do {
   switch args[1] {
-  case "set":
-    guard args.count >= 3 else {
-      usage()
-      exit(2)
-    }
-    try setValue(args[2])
-  case "get":
-    let value = try getValue()
+  case "set-bio", "set":
+    // "set" kept as alias for older builds that expected argv; prefer stdin
+    let secret = try readStdinSecret()
+    try setBioValue(secret)
+  case "get-bio", "get":
+    let value = try getBioValue()
     print(value)
-  case "delete":
-    try deleteValue()
+  case "delete-bio", "delete":
+    try deleteValue(service: bioService)
+  case "set-plain":
+    let secret = try readStdinSecret()
+    try setPlainValue(secret)
+  case "get-plain":
+    let value = try getPlainValue()
+    print(value)
+  case "delete-plain":
+    try deleteValue(service: plainService)
   default:
     usage()
     exit(2)
@@ -128,6 +184,9 @@ do {
   exit(1)
 } catch KeychainError.operationFailed(let status) where status == errSecItemNotFound {
   exit(3)
+} catch KeychainError.missingValue {
+  printErr("Missing secret on stdin")
+  exit(1)
 } catch {
   printErr(String(describing: error))
   exit(1)

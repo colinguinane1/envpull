@@ -3,21 +3,27 @@ export function fail(message: string): never {
   process.exit(1);
 }
 
-export function errorMessage(error: unknown, fallback = "Something went wrong"): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
+function axiosResponseError(error: unknown): string | null {
+  if (typeof error !== "object" || error === null || !("response" in error)) {
+    return null;
   }
 
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "response" in error
-  ) {
-    const response = (error as { response?: { data?: { error?: string } } })
-      .response;
-    if (response?.data?.error) {
-      return response.data.error;
-    }
+  const response = (error as { response?: { data?: { error?: string } } })
+    .response;
+  return response?.data?.error ?? null;
+}
+
+export function errorMessage(
+  error: unknown,
+  fallback = "Something went wrong",
+): string {
+  const fromApi = axiosResponseError(error);
+  if (fromApi) {
+    return fromApi;
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
   }
 
   return fallback;

@@ -33,7 +33,7 @@ export async function pullCommand() {
     );
 
     const envPath = path.join(process.cwd(), ENV_FILE);
-    fs.writeFileSync(envPath, plaintext);
+    fs.writeFileSync(envPath, plaintext, { mode: 0o600 });
 
     console.log(`✔ Downloaded and decrypted ${ENV_FILE} for ${project.slug}`);
   } catch (error) {

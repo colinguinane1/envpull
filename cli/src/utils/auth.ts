@@ -1,7 +1,8 @@
 import axios from "axios";
 import { getToken, removeToken } from "./config.js";
 import { getApiBase, authHeaders } from "./api.js";
-import { fail } from "./fail.js";
+import { clearMasterKey } from "./session.js";
+import { errorMessage, fail } from "./fail.js";
 
 export function failLoginRequired(): never {
   fail("Not logged in.\n\nRun: envpull login");
@@ -14,14 +15,22 @@ export async function requireAuth(): Promise<string> {
     failLoginRequired();
   }
 
+  let base: string;
   try {
-    await axios.get(`${getApiBase()}/auth/me`, {
+    base = getApiBase();
+  } catch (error) {
+    fail(errorMessage(error, "Invalid API URL"));
+  }
+
+  try {
+    await axios.get(`${base}/auth/me`, {
       headers: authHeaders(token),
       validateStatus: (status) => status >= 200 && status < 300,
     });
     return token;
   } catch {
     removeToken();
+    await clearMasterKey();
     failLoginRequired();
   }
 }

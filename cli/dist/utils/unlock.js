@@ -26,7 +26,8 @@ export async function requireUnlockedMasterKey(promptMessage = "Password:") {
         }
     }
     catch (error) {
-        fail(errorMessage(error, "Touch ID unlock failed"));
+        const message = errorMessage(error, "Touch ID unlock failed");
+        console.error(`${message}. Falling back to password.`);
     }
     const pwd = await password({ message: promptMessage });
     try {

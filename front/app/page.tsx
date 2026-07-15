@@ -4,11 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { InstallCommand } from "@/components/install-command";
 import { GitHubIcon, NpmIcon } from "@/components/brand-icons";
+import { EnvPullMark } from "@/components/envpull-mark";
 
 const PRINCIPLES = [
   {
     title: "Your secrets are yours.",
-    body: "envpull encrypts .env files on your machine before upload. The server only stores ciphertext — not even we can read them.",
+    body: "envpull encrypts .env files on your machine before upload. The server only stores ciphertext — we never see your plaintext secrets.",
   },
   {
     title: "Your workflow stays simple.",
@@ -33,8 +34,9 @@ export default function Home() {
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-6">
         <Link
           href="/"
-          className="font-display text-xl font-semibold tracking-tight text-foreground"
+          className="flex items-center gap-2.5 font-display text-xl font-semibold tracking-tight text-foreground"
         >
+          <EnvPullMark size={28} priority />
           envpull
         </Link>
         <nav className="flex items-center gap-1.5">
@@ -80,7 +82,12 @@ export default function Home() {
             >
               zero-knowledge .env sync
             </Badge>
-            <h1 className="rise rise-delay-1 font-display text-5xl leading-[0.95] font-semibold tracking-[-0.04em] text-foreground sm:text-6xl md:text-7xl">
+            <h1 className="rise rise-delay-1 flex items-center gap-3 font-display text-5xl leading-[0.95] font-semibold tracking-[-0.04em] text-foreground sm:gap-4 sm:text-6xl md:text-7xl">
+              <EnvPullMark
+                size={56}
+                className="size-12 sm:size-14 md:size-16"
+                priority
+              />
               envpull
             </h1>
             <p className="rise rise-delay-2 mt-5 max-w-md text-lg leading-relaxed text-ink-soft sm:text-xl">
@@ -229,7 +236,8 @@ export default function Home() {
       </main>
 
       <footer className="mx-auto flex w-full max-w-5xl flex-col gap-4 border-t border-border px-6 py-10 text-sm text-ink-soft sm:flex-row sm:items-center sm:justify-between">
-        <span className="font-display text-base font-semibold text-foreground">
+        <span className="flex items-center gap-2 font-display text-base font-semibold text-foreground">
+          <EnvPullMark size={22} />
           envpull
         </span>
         <div className="flex items-center gap-1.5">

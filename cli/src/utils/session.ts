@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { fileURLToPath } from "node:url";
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { isBiometricsEnabled } from "./config.js";
 
@@ -11,8 +11,6 @@ const execFileAsync = promisify(execFile);
 const envpullDir = path.join(os.homedir(), ".envpull");
 const unlockPath = path.join(envpullDir, "unlocked.key");
 const helperBinPath = path.join(envpullDir, "bin", "envpull-keychain");
-const KEYCHAIN_SERVICE = "envpull-master-key";
-const KEYCHAIN_ACCOUNT = "envpull";
 
 let memoryKey: Buffer | null = null;
 let warnedFileFallback = false;
@@ -33,7 +31,7 @@ function helperSourcePath() {
   return candidates.find((p) => fs.existsSync(p)) ?? candidates[0]!;
 }
 
-async function ensureBioHelper(): Promise<string> {
+async function ensureHelper(): Promise<string> {
   ensureDir();
   const binDir = path.dirname(helperBinPath);
   if (!fs.existsSync(binDir)) {
@@ -62,14 +60,71 @@ async function ensureBioHelper(): Promise<string> {
   return helperBinPath;
 }
 
+async function helperRun(
+  args: string[],
+  input?: string,
+): Promise<{ stdout: string; code?: number }> {
+  const helper = await ensureHelper();
+
+  if (input === undefined) {
+    try {
+      const { stdout } = await execFileAsync(helper, args, {
+        maxBuffer: 1024 * 1024,
+      });
+      return { stdout };
+    } catch (error) {
+      const err = error as {
+        code?: number;
+        stdout?: string;
+        stderr?: Buffer | string;
+        message?: string;
+      };
+      throw Object.assign(new Error(err.message ?? "helper failed"), {
+        code: err.code,
+        stdout: err.stdout,
+        stderr: err.stderr,
+      });
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(helper, args, { stdio: ["pipe", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString("utf8");
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString("utf8");
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve({ stdout, code: 0 });
+        return;
+      }
+      reject(
+        Object.assign(new Error(stderr.trim() || `helper exited ${code}`), {
+          code: code ?? 1,
+          stdout,
+          stderr,
+        }),
+      );
+    });
+
+    child.stdin.write(input);
+    child.stdin.end();
+  });
+}
+
 async function bioSet(value: string): Promise<boolean> {
   if (process.platform !== "darwin") {
     return false;
   }
 
   try {
-    const helper = await ensureBioHelper();
-    await execFileAsync(helper, ["set", value]);
+    await helperRun(["set-bio"], value);
     return true;
   } catch {
     return false;
@@ -82,8 +137,7 @@ async function bioGet(): Promise<string | null> {
   }
 
   try {
-    const helper = await ensureBioHelper();
-    const { stdout } = await execFileAsync(helper, ["get"]);
+    const { stdout } = await helperRun(["get-bio"]);
     const value = stdout.trim();
     return value.length > 0 ? value : null;
   } catch (error) {
@@ -101,8 +155,7 @@ async function bioDelete(): Promise<void> {
   }
 
   try {
-    const helper = await ensureBioHelper();
-    await execFileAsync(helper, ["delete"]);
+    await helperRun(["delete-bio"]);
   } catch {
     // ignore
   }
@@ -114,16 +167,7 @@ async function keychainSet(value: string): Promise<boolean> {
   }
 
   try {
-    await execFileAsync("security", [
-      "add-generic-password",
-      "-a",
-      KEYCHAIN_ACCOUNT,
-      "-s",
-      KEYCHAIN_SERVICE,
-      "-w",
-      value,
-      "-U",
-    ]);
+    await helperRun(["set-plain"], value);
     return true;
   } catch {
     return false;
@@ -136,17 +180,14 @@ async function keychainGet(): Promise<string | null> {
   }
 
   try {
-    const { stdout } = await execFileAsync("security", [
-      "find-generic-password",
-      "-a",
-      KEYCHAIN_ACCOUNT,
-      "-s",
-      KEYCHAIN_SERVICE,
-      "-w",
-    ]);
+    const { stdout } = await helperRun(["get-plain"]);
     const value = stdout.trim();
     return value.length > 0 ? value : null;
-  } catch {
+  } catch (error) {
+    const code = (error as { code?: number }).code;
+    if (code === 3) {
+      return null;
+    }
     return null;
   }
 }
@@ -157,13 +198,7 @@ async function keychainDelete(): Promise<void> {
   }
 
   try {
-    await execFileAsync("security", [
-      "delete-generic-password",
-      "-a",
-      KEYCHAIN_ACCOUNT,
-      "-s",
-      KEYCHAIN_SERVICE,
-    ]);
+    await helperRun(["delete-plain"]);
   } catch {
     // already absent
   }

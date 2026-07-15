@@ -19,7 +19,7 @@ export async function pullCommand() {
         const response = await axios.get(`${getApiBase()}/projects/${project.slug}/env`, { headers: authHeaders(token) });
         const plaintext = await decryptEnv(masterKey, response.data.nonce, response.data.ciphertext);
         const envPath = path.join(process.cwd(), ENV_FILE);
-        fs.writeFileSync(envPath, plaintext);
+        fs.writeFileSync(envPath, plaintext, { mode: 0o600 });
         console.log(`✔ Downloaded and decrypted ${ENV_FILE} for ${project.slug}`);
     }
     catch (error) {

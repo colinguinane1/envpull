@@ -1,59 +1,55 @@
 # envpull
 
-> Secure environment variable management for developers.
+Secure, client-side encrypted `.env` sync for developers.
 
-⚠️ **Status: Active Development**
+Website: [https://envpull.dev](https://envpull.dev) · API: [https://api.envpull.dev](https://api.envpull.dev)
 
-envpull is currently in early development and is **not ready for production use yet**. Features, APIs, encryption methods, and workflows may change as development continues.
-
----
-
-## What is envpull?
-
-envpull is a CLI tool designed to make managing environment variables easier across multiple machines and projects.
-
-Developers constantly deal with `.env` files containing important configuration values:
-
-- API keys
-- Database URLs
-- OAuth secrets
-- Application configuration
-- Service credentials
-
-Moving between computers, onboarding team members, or restoring a project setup often means manually copying `.env` files around.
-
-envpull aims to provide a secure way to store, sync, and retrieve environment variables from anywhere using a simple command-line workflow.
-
----
-
-## Planned Features
-
-### 🔐 Secure secret storage
-
-envpull will encrypt environment variables before storing them, ensuring that sensitive values are protected.
-
-The goal is:
-
-- Secrets are never stored as plain text
-- Only authorized users can decrypt their variables
-- Projects can safely sync environment configuration
-
----
-
-### 💻 Simple CLI workflow
-
-The intended workflow will look something like:
+## Install
 
 ```bash
-# Authenticate
-envpull login
-
-# Create or connect a project
-envpull init
-
-# Upload environment variables
-envpull push
-
-# Download environment variables
-envpull pull
+npm i -g @colinguinane/envpull-cli
 ```
+
+Requires Node.js 20+.
+
+## Quick start
+
+```bash
+envpull login          # create an account or sign in
+envpull init           # link this directory to a project
+envpull push           # encrypt and upload .env
+envpull pull           # download and decrypt .env
+```
+
+Forgot your password?
+
+```bash
+envpull recover        # reset with your recovery key (no login required)
+```
+
+## How encryption works
+
+- Your `.env` is encrypted on your machine (AES-GCM) before upload.
+- The server stores ciphertext and key wraps only — not plaintext secrets.
+- Unlock uses your password locally (Argon2id). On signup you get a **recovery key**; save it. envpull cannot restore a vault if both the password and recovery key are lost.
+- Password and recovery key are sent over TLS so the API can authenticate you (they're hashed server-side). Env contents stay client-encrypted.
+
+## Useful commands
+
+```bash
+envpull whoami
+envpull logout
+envpull config show
+envpull config set-api https://api.envpull.dev
+envpull config set-biometrics on   # macOS Touch ID unlock
+```
+
+Override the API URL with `ENVPULL_API_URL` (HTTPS required; `http://localhost` allowed for local dev).
+
+## Self-host
+
+See [docs/self-host.md](docs/self-host.md).
+
+## License
+
+ISC

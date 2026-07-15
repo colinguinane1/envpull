@@ -1,2 +1,8 @@
 node_modules
 .envpull.json
+.env
+.env.*
+!.env.example
+unlocked.key
+*.pem
+*.key
