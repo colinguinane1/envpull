@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Geist, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-
+import { Analytics } from "@vercel/analytics/next"
 const display = Fraunces({
   variable: "--font-display",
   subsets: ["latin"],
@@ -49,7 +49,10 @@ export default function RootLayout({
         mono.variable,
       )}
     >
-      <body className="min-h-full font-sans">{children}</body>
+      <body className="min-h-full font-sans">
+        <Analytics />
+        {children}
+      </body>
     </html>
   );
 }
