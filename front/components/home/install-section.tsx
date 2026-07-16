@@ -11,11 +11,11 @@ export function InstallSection() {
           Install
         </h2>
         <p className="mt-3 max-w-lg text-ink-soft">
-          Requires Node 20+. Point the CLI at{" "}
+          Requires Node 20+. The CLI uses {" "}
           <code className="font-mono text-sm text-foreground">
             api.envpull.dev
           </code>{" "}
-          by default — or your own host.
+          by default — or you can host yourself.
         </p>
       </div>
       <InstallCommand />
